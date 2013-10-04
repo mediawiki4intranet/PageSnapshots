@@ -145,7 +145,8 @@ class PageSnapshotsExtension
      */
     static function fileRev($parser, $title, &$time, &$sha1, &$descQuery)
     {
-        return self::fileRev1_19($parser, $title, array('time' => &$time, 'sha1' => &$sha1), $descQuery);
+        $opt = array('time' => &$time, 'sha1' => &$sha1);
+        return self::fileRev1_19($parser, $title, $opt, $descQuery);
     }
 
     /**
