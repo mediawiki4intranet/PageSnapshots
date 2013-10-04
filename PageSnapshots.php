@@ -30,7 +30,7 @@ $wgHooks['PageHistoryLineEnding'][] = 'PageSnapshotsExtension::historyItem';
 $wgHooks['BeforeInitialize'][] = 'PageSnapshotsExtension::init';
 $wgHooks['ArticleViewHeader'][] = 'PageSnapshotsExtension::start';
 $wgHooks['BeforeParserFetchTemplateAndtitle'][] = 'PageSnapshotsExtension::templateRev';
-$wgHooks['BeforeParserFetchFileAndTitle'][] = 'PageSnapshotsExtension::fileRev';
+$wgHooks['BeforeParserFetchFileAndTitle'][] = 'PageSnapshotsExtension::fileRev' . (version_compare($wgVersion, '1.19', '>=') ? '1_19' : '');
 $wgHooks['LinkBegin'][] = 'PageSnapshotsExtension::linkRev';
 
 $egSnapshot = NULL;
@@ -122,15 +122,15 @@ class PageSnapshotsExtension
     }
 
     /**
-     * Override revision of included file
+     * Override revision of included file (for MW 1.19+)
      */
-    static function fileRev($parser, $title, &$time, &$sha1, &$descQuery)
+    static function fileRev1_19($parser, $title, &$options, &$descQuery)
     {
         global $egSnapshot;
         if ($egSnapshot)
         {
             $dbr = wfGetDB(DB_SLAVE);
-            $time = $dbr->selectField(
+            $options['time'] = $dbr->selectField(
                 'oldimage', 'oi_timestamp', array(
                     'oi_name' => $title->getDBkey(),
                     'oi_timestamp <= \''.wfTimestamp(TS_MW, $egSnapshot).'\'',
@@ -138,6 +138,14 @@ class PageSnapshotsExtension
             );
         }
         return true;
+    }
+
+    /**
+     * Override revision of included file
+     */
+    static function fileRev($parser, $title, &$time, &$sha1, &$descQuery)
+    {
+        return self::fileRev1_19($parser, $title, array('time' => &$time, 'sha1' => &$sha1), $descQuery);
     }
 
     /**
