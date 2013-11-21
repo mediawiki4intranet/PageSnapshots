@@ -62,7 +62,7 @@ class PageSnapshotsExtension
         $p = strpos($s, ')');
         if ($p !== false)
         {
-            $link = $pager->title->getLocalUrl(array('oldid' => $row->rev_id, 'snapshot' => 1));
+            $link = $pager->getTitle()->getLocalUrl(array('oldid' => $row->rev_id, 'snapshot' => 1));
             $msg = wfMsg('page-history-snapshot');
             $s = substr($s, 0, $p) . ' | <a href="'.htmlspecialchars($link).'">'.$msg.'</a>' . substr($s, $p);
         }
