@@ -3,8 +3,10 @@
 /**
  * PageSnapshots - extension allows to view 'snapshots' of old page revisions
  *   (with corresponding revisions of included templates and images).
- *   DOES NOT deal with deletions or renames, so if you want to see
- *   old versions of your pages in future - DO NOT delete anything that was used.
+ * NOTES:
+ * 1) DOES NOT deal with deletions or renames, so if you want to see
+ *    old versions of your pages in future - DO NOT delete anything that was used.
+ * 2) It's relatively slow to view snapshots.
  *
  * Copyright 2012+ Vitaliy Filippov <vitalif@mail.ru>
  *
@@ -51,7 +53,7 @@ class PageSnapshotsExtension
                 'page_id=rev_page',
                 'page_namespace' => $title->getNamespace(),
                 'page_title' => $title->getDBkey(),
-                'rev_timestamp <= \''.wfTimestamp(TS_MW, $time).'\'',
+                'rev_timestamp <= '.$dbr->timestamp($time),
             ), __METHOD__, array('ORDER BY' => 'rev_timestamp DESC', 'LIMIT' => 1)
         );
         return $oldid;
@@ -104,7 +106,7 @@ class PageSnapshotsExtension
         {
             if (self::$activeSnapshot == '1')
             {
-                self::$activeSnapshot = $article->getTimestamp();
+                self::$activeSnapshot = Revision::newFromId($article->getOldId())->getTimestamp();
             }
             $useParserCache = false;
         }
