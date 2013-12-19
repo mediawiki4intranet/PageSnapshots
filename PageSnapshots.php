@@ -31,6 +31,7 @@ $wgExtensionMessagesFiles['PageSnapshots'] = dirname(__FILE__).'/PageSnapshots.i
 $wgHooks['PageHistoryLineEnding'][] = 'PageSnapshotsExtension::historyItem';
 $wgHooks['BeforeInitialize'][] = 'PageSnapshotsExtension::init';
 $wgHooks['ArticleViewHeader'][] = 'PageSnapshotsExtension::start';
+$wgHooks['ArticleViewFooter'][] = 'PageSnapshotsExtension::end';
 $wgHooks['BeforeParserFetchTemplateAndtitle'][] = 'PageSnapshotsExtension::templateRev';
 $wgHooks['BeforeParserFetchFileAndTitle'][] = 'PageSnapshotsExtension::fileRev' . (version_compare($wgVersion, '1.19', '>=') ? '1_19' : '');
 $wgHooks['LinkBegin'][] = 'PageSnapshotsExtension::linkRev';
@@ -82,9 +83,9 @@ class PageSnapshotsExtension
         {
             self::$activeSnapshot = wfTimestampOrNull(TS_MW, self::$activeSnapshot);
         }
-        if ($title &&
+        if ((self::$activeSnapshot && self::$activeSnapshot != '1') &&
+            $title &&
             $wgRequest->getVal('action', 'view') == 'view' &&
-            (self::$activeSnapshot && self::$activeSnapshot != '1') &&
             !$wgRequest->getVal('oldid'))
         {
             $wgRequest->setVal('oldid', self::getRevByTime($title, self::$activeSnapshot));
@@ -99,13 +100,26 @@ class PageSnapshotsExtension
     static function start($article, &$outputDone, &$useParserCache)
     {
         global $wgRequest;
-        if ($article->getOldId() && self::$activeSnapshot)
+        if (self::$activeSnapshot && $article->getOldId())
         {
             if (self::$activeSnapshot == '1')
             {
                 self::$activeSnapshot = $article->getTimestamp();
             }
             $useParserCache = false;
+        }
+        return true;
+    }
+
+    /**
+     * Print a snapshot warning near page revision information
+     */
+    static function end($article)
+    {
+        global $wgOut;
+        if (self::$activeSnapshot && $article->getOldId())
+        {
+            $wgOut->setSubtitle($wgOut->getSubtitle().'<div id="mw-snapshots-info">'.wfMsg('page-snapshot-warning').'</div>');
         }
         return true;
     }
