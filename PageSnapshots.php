@@ -172,7 +172,7 @@ class PageSnapshotsExtension
     {
         if (self::$activeSnapshot)
         {
-            $query['snapshot'] = self::$activeSnapshot;
+            $query['snapshot'] = isset($query['oldid']) ? '1' : self::$activeSnapshot;
         }
         return true;
     }
