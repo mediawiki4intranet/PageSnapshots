@@ -2,7 +2,9 @@
 
 /**
  * PageSnapshots - extension allows to view 'snapshots' of old page revisions
- *   (with corresponding revisions of included templates and images)
+ *   (with corresponding revisions of included templates and images).
+ *   DOES NOT deal with deletions or renames, so if you want to see
+ *   old versions of your pages in future - DO NOT delete anything that was used.
  *
  * Copyright 2012+ Vitaliy Filippov <vitalif@mail.ru>
  *
@@ -33,10 +35,10 @@ $wgHooks['BeforeParserFetchTemplateAndtitle'][] = 'PageSnapshotsExtension::templ
 $wgHooks['BeforeParserFetchFileAndTitle'][] = 'PageSnapshotsExtension::fileRev' . (version_compare($wgVersion, '1.19', '>=') ? '1_19' : '');
 $wgHooks['LinkBegin'][] = 'PageSnapshotsExtension::linkRev';
 
-$egSnapshot = NULL;
-
 class PageSnapshotsExtension
 {
+    static $activeSnapshot;
+
     /**
      * Get page revision id, actual for $time
      */
@@ -74,18 +76,18 @@ class PageSnapshotsExtension
      */
     static function init(&$title, $unused, &$output, &$user, $request, $wiki)
     {
-        global $wgRequest, $egSnapshot;
-        $egSnapshot = $wgRequest->getVal('snapshot');
-        if ($egSnapshot && $egSnapshot != '1')
+        global $wgRequest;
+        self::$activeSnapshot = $wgRequest->getVal('snapshot');
+        if (self::$activeSnapshot && self::$activeSnapshot != '1')
         {
-            $egSnapshot = wfTimestampOrNull(TS_MW, $egSnapshot);
+            self::$activeSnapshot = wfTimestampOrNull(TS_MW, self::$activeSnapshot);
         }
         if ($title &&
             $wgRequest->getVal('action', 'view') == 'view' &&
-            ($egSnapshot && $egSnapshot != '1') &&
+            (self::$activeSnapshot && self::$activeSnapshot != '1') &&
             !$wgRequest->getVal('oldid'))
         {
-            $wgRequest->setVal('oldid', self::getRevByTime($title, $egSnapshot));
+            $wgRequest->setVal('oldid', self::getRevByTime($title, self::$activeSnapshot));
         }
         return true;
     }
@@ -96,12 +98,12 @@ class PageSnapshotsExtension
      */
     static function start($article, &$outputDone, &$useParserCache)
     {
-        global $wgRequest, $egSnapshot;
-        if ($article->getOldId() && $egSnapshot)
+        global $wgRequest;
+        if ($article->getOldId() && self::$activeSnapshot)
         {
-            if ($egSnapshot == '1')
+            if (self::$activeSnapshot == '1')
             {
-                $egSnapshot = $article->getTimestamp();
+                self::$activeSnapshot = $article->getTimestamp();
             }
             $useParserCache = false;
         }
@@ -113,10 +115,9 @@ class PageSnapshotsExtension
      */
     static function templateRev($parser, $title, &$skip, &$id)
     {
-        global $egSnapshot;
-        if ($egSnapshot)
+        if (self::$activeSnapshot)
         {
-            $id = self::getRevByTime($title, $egSnapshot);
+            $id = self::getRevByTime($title, self::$activeSnapshot);
         }
         return true;
     }
@@ -126,14 +127,13 @@ class PageSnapshotsExtension
      */
     static function fileRev1_19($parser, $title, &$options, &$descQuery)
     {
-        global $egSnapshot;
-        if ($egSnapshot)
+        if (self::$activeSnapshot)
         {
             $dbr = wfGetDB(DB_SLAVE);
             $options['time'] = $dbr->selectField(
                 'oldimage', 'oi_timestamp', array(
                     'oi_name' => $title->getDBkey(),
-                    'oi_timestamp <= \''.wfTimestamp(TS_MW, $egSnapshot).'\'',
+                    'oi_timestamp <= \''.wfTimestamp(TS_MW, self::$activeSnapshot).'\'',
                 ), __METHOD__, array('ORDER BY' => 'oi_timestamp DESC', 'LIMIT' => 1)
             );
         }
@@ -154,10 +154,9 @@ class PageSnapshotsExtension
      */
     static function linkRev($dummy, $target, &$html, &$customAttribs, &$query, &$options, &$ret)
     {
-        global $egSnapshot;
-        if ($egSnapshot)
+        if (self::$activeSnapshot)
         {
-            $query['snapshot'] = $egSnapshot;
+            $query['snapshot'] = self::$activeSnapshot;
         }
         return true;
     }
