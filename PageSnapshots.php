@@ -145,13 +145,11 @@ class PageSnapshotsExtension
     {
         if (self::$activeSnapshot)
         {
-            $dbr = wfGetDB(DB_SLAVE);
-            $options['time'] = $dbr->selectField(
-                'oldimage', 'oi_timestamp', array(
-                    'oi_name' => $title->getDBkey(),
-                    'oi_timestamp <= \''.wfTimestamp(TS_MW, self::$activeSnapshot).'\'',
-                ), __METHOD__, array('ORDER BY' => 'oi_timestamp DESC', 'LIMIT' => 1)
-            );
+            $file = wfFindFile($title);
+            if ($file->getTimestamp() > self::$activeSnapshot)
+            {
+                $options['time'] = $file->getHistory(1, NULL, self::$activeSnapshot)->getTimestamp();
+            }
         }
         return true;
     }
