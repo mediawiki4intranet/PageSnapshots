@@ -64,12 +64,11 @@ class PageSnapshotsExtension
      */
     static function historyItem($pager, &$row, &$s, &$classes)
     {
-        $p = strpos($s, ')');
-        if ($p !== false)
+        if (preg_match('/^(<[^>]*>|[^<\)]+)*?(\))/s', $s, $m, PREG_OFFSET_CAPTURE))
         {
             $link = $pager->getTitle()->getLocalUrl(array('oldid' => $row->rev_id, 'snapshot' => 1));
             $msg = wfMsg('page-history-snapshot');
-            $s = substr($s, 0, $p) . ' | <a href="'.htmlspecialchars($link).'">'.$msg.'</a>' . substr($s, $p);
+            $s = substr($s, 0, $m[2][1]) . ' | <a href="'.htmlspecialchars($link).'">'.$msg.'</a>' . substr($s, $m[2][1]);
         }
         return true;
     }
