@@ -145,9 +145,13 @@ class PageSnapshotsExtension
         if (self::$activeSnapshot)
         {
             $file = wfFindFile($title);
-            if ($file->getTimestamp() > self::$activeSnapshot)
+            if ($file && $file->getTimestamp() > self::$activeSnapshot)
             {
-                $options['time'] = $file->getHistory(1, NULL, self::$activeSnapshot)->getTimestamp();
+                $old = $file->getHistory(1, NULL, self::$activeSnapshot);
+                if ($old)
+                {
+                    $options['time'] = $old[0]->getTimestamp();
+                }
             }
         }
         return true;
